@@ -1,7 +1,20 @@
+import json
+
 import pytest
 
 from glassbox.fake import FakeGlassbox
-from ui.app import build_app, diff_rows, feature_rows, reply_tokens, steering_from_inputs, token_spans
+from ui.app import (
+    STEERING_ROWS,
+    TOURS_DIR,
+    build_app,
+    diff_rows,
+    feature_rows,
+    load_tours,
+    reply_tokens,
+    steering_from_inputs,
+    token_spans,
+    tour_inputs,
+)
 
 
 def test_steering_skips_empty_ids_and_zero_strengths():
@@ -32,3 +45,29 @@ def test_feature_and_diff_rows_carry_labels():
 
 def test_app_builds_with_fake_backend():
     build_app(FakeGlassbox.load(), fake=True)
+
+
+def test_tour_fills_first_row_and_clears_the_rest(tmp_path):
+    (tmp_path / "a.json").write_text(
+        json.dumps({"title": "A", "prompt": "p", "max_new_tokens": 30, "steering": [{"feature_id": 7, "strength": 400}]}),
+        encoding="utf-8",
+    )
+    tour = load_tours(tmp_path)["A"]
+    values = tour_inputs(tour)
+    assert values[:2] == ["p", 30]
+    assert values[2 : 2 + STEERING_ROWS] == [7, None, None]
+    assert values[2 + STEERING_ROWS :] == [400.0, 0, 0]
+
+
+def test_missing_tours_folder_means_no_tours(tmp_path):
+    assert load_tours(tmp_path / "nope") == {}
+
+
+def test_repo_tours_are_valid_and_steer_curated_features():
+    tours = load_tours(TOURS_DIR)
+    curated = json.loads((TOURS_DIR.parent / "labels" / "curated.json").read_text(encoding="utf-8"))
+    assert tours
+    for tour in tours.values():
+        assert tour["prompt"] and tour["description"]
+        for feature_id in tour["steering"]:
+            assert str(feature_id) in curated  # every tour feature has a hand-written label
