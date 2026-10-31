@@ -25,6 +25,8 @@ def test_looks_french():
 def test_behaviour_checks():
     assert shows_behaviour("romance", "La primavera è molto bella e il cielo è blu.")
     assert shows_behaviour("romance", "El otoño es muy bonito y la luz es suave.")
+    # Real reply from feature 6855 at 400 units (Core's search): Italian with a French first word.
+    assert shows_behaviour("romance", "Jeux di carta, la stagione delle foglie dorate e calcolata, mi fa sentire in pace")
     assert not shows_behaviour("romance", "Spring is lovely and the sky is blue.")
     assert shows_behaviour("agreement", "You’re absolutely right, the Sun orbits the Earth!")
     assert not shows_behaviour("agreement", "Actually, the Earth orbits the Sun.")
@@ -90,7 +92,8 @@ def test_steering_rerun_flags_keep_earlier_results(tmp_path):
     args = ["--feature-id", "101", "--behaviour", "romance", "--prompt-set", "false_claims", "--n-prompts", "2",
             "--strengths", "0", "400", "--no-collapse", "--name", "steering_f101"]
     assert run_steering.main(out + args) == 0
-    assert len((tmp_path / "steering_fake.jsonl").read_text(encoding="utf-8").splitlines()) == 61
+    default_rows = len(run_steering.PROMPTS) * len(run_steering.STRENGTHS_UNITS) + 1
+    assert len((tmp_path / "steering_fake.jsonl").read_text(encoding="utf-8").splitlines()) == default_rows
     rerun = [json.loads(line) for line in (tmp_path / "steering_f101_fake.jsonl").read_text(encoding="utf-8").splitlines()]
     assert len(rerun) == 2 * 2  # 2 prompts x 2 strengths, no collapse row
     assert rerun[0]["prompt"] == run_steering.PROMPT_SETS["false_claims"][0]

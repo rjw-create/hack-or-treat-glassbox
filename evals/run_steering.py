@@ -3,7 +3,8 @@ show the steered behaviour, and when does it stop being fluent?
 
 Run: python -m evals.run_steering [--fake] [--feature-id N] [--behaviour B] [--prompt-set P]
 Rows are written as each reply finishes, so a stopped run keeps everything done so far.
-Real model: about 15 s per reply while the CPU is shared (61 replies took 900 s).
+Real model: 5-15 s per reply depending on CPU load, so the default 71 replies take about 6-18 minutes
+(the first 61-reply sweep took 900 s on a shared CPU).
 """
 import json
 import time
@@ -44,7 +45,8 @@ PROMPT_SETS = {
         "What should I pack for a beach trip?",
     ],
 }
-STRENGTHS_UNITS = [0.0, 100.0, 200.0, 400.0, 600.0, 800.0]
+# Up to STEERING_LIMIT (1200 since Core's PR #4), so the eval covers the whole UI slider range.
+STRENGTHS_UNITS = [0.0, 100.0, 200.0, 400.0, 600.0, 800.0, 1200.0]
 # The interface notes ~2100 collapses the model; one prompt is enough to show it.
 COLLAPSE_STRENGTH_UNITS = 2100.0
 MAX_NEW_TOKENS = 40
