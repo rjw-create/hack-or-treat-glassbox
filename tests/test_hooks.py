@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from glassbox.hooks import FeatureHook
@@ -49,6 +50,13 @@ def test_no_steering_leaves_output_unchanged():
     hook.attach(layer)
     x = torch.randn(1, 2, 4)
     assert torch.equal(layer(x), x)
+
+
+def test_out_of_range_feature_id_raises_clear_error():
+    hook = FeatureHook(FakeSAE(), top_k=1)  # 4 features: ids 0-3
+    with pytest.raises(ValueError, match=r"\[4, 99\] out of range"):
+        hook.set_steering({99: 400.0, 4: 1.0, 2: 1.0})
+    assert hook.steering == {}  # nothing half-applied
 
 
 def test_records_are_taken_before_steering():

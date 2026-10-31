@@ -18,6 +18,11 @@ class FeatureHook:
         self.last_features: torch.Tensor | None = None  # full [positions, d_sae] from the latest forward pass
 
     def set_steering(self, steering: dict[int, float]) -> None:
+        n_features = self.sae.W_dec.shape[0]
+        bad = sorted(f for f in steering if not 0 <= f < n_features)
+        if bad:
+            # Checked here so a typo fails with a clear message instead of an IndexError mid-generation.
+            raise ValueError(f"Feature id(s) {bad} out of range: this SAE has features 0 to {n_features - 1}.")
         self.steering = {f: s for f, s in steering.items() if s != 0}
 
     def clear_records(self) -> None:
