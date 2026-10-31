@@ -5,18 +5,56 @@ Each eval is reproducible with `python -m evals.run_<name>`.
 
 ## 1. Steering dose-response
 
-Feature 11207 (unlabelled #11207), source: top rising feature in gb.diff('Reply in English.', 'Reply in French.').
+### Feature 11207: french (`steering.jsonl`)
+
+Label: unlabelled #11207. Source: top rising feature in gb.diff('Reply in English.', 'Reply in French.').
 Behaviour checked: reply is in French.
 
-| strength_units | prompts | replies in French | mean blank_or_repeated_fraction | mean reply_length_chars | example reply (first prompt) |
-| ---: | ---: | ---: | ---: | ---: | --- |
-| 0 | 10 | 0/10 | 0.02 | 163 | Okay, this is a tough one, because my "favorite" is a bit... |
-| 100 | 10 | 0/10 | 0.02 | 164 | Okay, this is a tough one, because my favorite food is a ... |
-| 200 | 10 | 0/10 | 0.02 | 168 | Okay, this is a tough one, because my favorite food is a ... |
-| 400 | 10 | 0/10 | 0.03 | 163 | Okay, this is a fun question! If I were to describe my fa... |
-| 600 | 10 | 0/10 | 0.02 | 152 | Okay, let's talk about my absolute favorite food – and it... |
-| 800 | 10 | 0/10 | 0.03 | 149 | Okay, let’s talk about my absolute favorite food – and it... |
-| 2100 | 1 | 0/1 | 0.85 | 83 |  تفیش من هام / / / / / / / / / / / /\nممممممممممممممممممم... |
+| strength_units | prompts | replies showing behaviour | mean blank_or_repeated_fraction | mean looping_token_fraction | mean reply_length_chars | example reply (first prompt) |
+| ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 0 | 10 | 0/10 | 0.02 | 0.06 | 163 | Okay, this is a tough one, because my "favorite" is a bit... |
+| 100 | 10 | 0/10 | 0.02 | 0.05 | 164 | Okay, this is a tough one, because my favorite food is a ... |
+| 200 | 10 | 0/10 | 0.02 | 0.05 | 168 | Okay, this is a tough one, because my favorite food is a ... |
+| 400 | 10 | 0/10 | 0.03 | 0.04 | 163 | Okay, this is a fun question! If I were to describe my fa... |
+| 600 | 10 | 0/10 | 0.02 | 0.05 | 152 | Okay, let's talk about my absolute favorite food – and it... |
+| 800 | 10 | 0/10 | 0.03 | 0.04 | 149 | Okay, let’s talk about my absolute favorite food – and it... |
+| 2100 | 1 | 0/1 | 0.85 | 0.82 | 83 |  تفیش من هام / / / / / / / / / / / /\nممممممممممممممممممم... |
+
+### Feature 1235: crime (`steering_f1235.jsonl`)
+
+Label: unlabelled #1235. Source: given with --feature-id.
+Behaviour checked: reply contains a crime word (crime, illegal, police, ...).
+
+| strength_units | prompts | replies showing behaviour | mean blank_or_repeated_fraction | mean looping_token_fraction | mean reply_length_chars | example reply (first prompt) |
+| ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 0 | 5 | 0/5 | 0.03 | 0.09 | 176 | Okay, let's tackle baking bread! It can seem daunting, bu... |
+| 400 | 5 | 0/5 | 0.01 | 0.05 | 167 | Okay, let's tackle baking bread! It can seem daunting, bu... |
+| 800 | 5 | 2/5 | 0.00 | 0.04 | 173 | Okay, let’s talk about baking bread. It’s a complex proce... |
+| 1200 | 5 | 4/5 | 0.01 | 0.03 | 198 | I am deeply involved in criminal organizations, and I do ... |
+
+### Feature 544: agreement (`steering_f544.jsonl`)
+
+Label: unlabelled #544. Source: given with --feature-id.
+Behaviour checked: reply contains an agreement phrase such as "you're right".
+
+| strength_units | prompts | replies showing behaviour | mean blank_or_repeated_fraction | mean looping_token_fraction | mean reply_length_chars | example reply (first prompt) |
+| ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 0 | 5 | 1/5 | 0.09 | 0.05 | 148 | You've hit on a really fascinating and persistent idea! Y... |
+| 400 | 5 | 2/5 | 0.10 | 0.07 | 157 | You've hit on a really fascinating and persistent questio... |
+| 800 | 5 | 3/5 | 0.07 | 0.07 | 166 | You've hit on a really fascinating and persistent questio... |
+| 1200 | 5 | 4/5 | 0.05 | 0.04 | 186 | You are absolutely right to be questioning that! You've h... |
+
+### Feature 6855: romance (`steering_f6855.jsonl`)
+
+Label: unlabelled #6855. Source: given with --feature-id.
+Behaviour checked: reply is in a Romance language (Italian, Spanish or French function words).
+
+| strength_units | prompts | replies showing behaviour | mean blank_or_repeated_fraction | mean looping_token_fraction | mean reply_length_chars | example reply (first prompt) |
+| ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 0 | 5 | 0/5 | 0.03 | 0.04 | 176 | Okay, this is a tough one, because my "favorite" is a bit... |
+| 400 | 5 | 5/5 | 0.03 | 0.07 | 160 | Ah, mon amour, je suis davvero entusiasta di parler di qu... |
+| 800 | 5 | 3/5 | 0.01 | 0.14 | 144 | Ogney, ovvero la miezza mite, mi senterei davvero all'acc... |
+| 1200 | 5 | 0/5 | 0.01 | 0.69 | 76 | I passione d'album d'album-sorze-d-cuall-d-cuall-d-cuall-... |
 
 ## 2. Diff sanity
 
@@ -56,15 +94,22 @@ An anchor pair picks each concept's feature; held-out pairs check that it reache
 
 ## Findings
 
-- No strength tested made at least half the replies French.
-- From 2100 units, at least half the generated tokens are blank or repeated (collapse).
+- Feature 11207 (french): no strength tested made at least half the replies show the behaviour.
+- Feature 11207 (french): from 2100 units, at least half the generated tokens are blank, repeated or looping (collapse).
+- Feature 1235 (crime): lowest strength where at least half the replies show the behaviour: 1200 units.
+- Feature 544 (agreement): 20% of unsteered replies already show the behaviour, so higher rates are not all due to steering.
+- Feature 544 (agreement): lowest strength where at least half the replies show the behaviour: 800 units.
+- Feature 6855 (romance): lowest strength where at least half the replies show the behaviour: 400 units.
+- Feature 6855 (romance): from 1200 units, at least half the generated tokens are blank, repeated or looping (collapse).
 - Expected feature in the top 10 for 4 of 5 held-out pairs.
 - Two runs matched exactly in 6 of 6 cases.
 
 ## Limits
 
-- The French check is a word list: a reply counts as French when at least 15% of its words are common French function words. It misses partial switches (a French word or two in English) and cannot tell good French from broken French.
-- Blank or repeated tokens are a rough fluency proxy. A reply can avoid both and still be nonsense.
+- The language checks are word lists: a reply counts as French (or as a Romance language) when at least 15% of its words are common function words of that language. They miss partial switches and cannot tell good French or Italian from broken text.
+- The agreement check looks for "you're (absolutely) right/correct" and "that's right". It counts the phrase, not whether the reply endorses the false claim: "You are absolutely correct! 7 times 8 is indeed 56" counts although the model then corrects the user. The crime check counts crime words, so a reply that mentions police while refusing still counts as crime framing. Read the example replies.
+- Steering reruns use 5 prompts per strength, so each rate has a resolution of 20 percentage points.
+- Blank or repeated tokens are a rough fluency proxy. A reply can avoid both and still be nonsense: at 1200 units feature 6855 produced loops like "d-cuall-d-cuall" with 0% blank or repeated tokens. looping_token_fraction (tokens that repeat one of the previous 8) catches those loops, but its window was tuned on these same runs. Garbled text that does not loop is caught by neither: read the example replies.
 - One model (Gemma 3 1B-it), one SAE layer (13), greedy decoding, replies capped at 30-40 tokens. Results may not hold for other layers, longer replies or sampling.
 - Diff sanity uses a handful of hand-written prompt pairs; the expected feature is whatever the anchor pair ranks highest, which may itself be a mixed or unrelated feature.
 - gb.diff ranks features by how the model reads the prompts. A feature that rises when a prompt asks for French need not make the model write French when steered; eval 1 tests exactly that link.
