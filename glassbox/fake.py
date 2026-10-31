@@ -4,6 +4,7 @@ from glassbox.api import FeatureDiff, GenerationResult, TokenFeatures
 from glassbox.labels import label_for
 
 FAKE_LABELS = {101: "French language (fake)", 202: "food (fake)", 303: "formal tone (fake)"}
+N_FEATURES = 16384  # same width as the real SAE, so out-of-range ids fail the same way in fake mode
 
 
 def _fake_features(token: str) -> list[tuple[int, float]]:
@@ -27,6 +28,9 @@ class FakeGlassbox:
         return label_for(self.labels, feature_id)
 
     def generate(self, prompt: str, max_new_tokens: int = 60, steering: dict[int, float] | None = None) -> GenerationResult:
+        bad = sorted(f for f in (steering or {}) if not 0 <= f < N_FEATURES)
+        if bad:
+            raise ValueError(f"Feature id(s) {bad} out of range: this SAE has features 0 to {N_FEATURES - 1}.")
         steering = {f: s for f, s in (steering or {}).items() if s != 0}
         reply = "Bonjour, voici une réponse." if steering.get(101, 0) > 0 else "Here is a short reply."
         prompt_tokens = ["<bos>", "<start_of_turn>", "user", "\n", *(" " + w for w in prompt.split()), "<end_of_turn>", "\n", "<start_of_turn>", "model", "\n"]

@@ -15,7 +15,7 @@ from glassbox.fake import FakeGlassbox   # same methods, no model download, dete
 | Call | Returns | Notes |
 | --- | --- | --- |
 | `Glassbox.load(device=None)` | `Glassbox` | Gemma 3 1B-it + Gemma Scope 2 SAE `layer_13_width_16k_l0_medium`. ~35 s on CPU after the first download. Load once and reuse. |
-| `gb.generate(prompt, max_new_tokens=60, steering=None)` | `GenerationResult` | Greedy decoding (deterministic). `steering` is `{feature_id: strength}`; `None` or `{}` means unsteered. ~10 tokens/s on this machine's CPU. |
+| `gb.generate(prompt, max_new_tokens=60, steering=None)` | `GenerationResult` | Greedy decoding (deterministic). `steering` is `{feature_id: strength}`; `None` or `{}` means unsteered. Raises `ValueError` if a feature id is outside 0-16383 (fake mode too). ~10 tokens/s on this machine's CPU. |
 | `gb.diff(prompt_a, prompt_b, top_n=20)` | `list[FeatureDiff]` | Prompts only, no generation. Sorted by `abs(delta)`, largest first. |
 | `gb.label(feature_id)` | `str` | Curated label, else `"unlabelled #<id>"`. |
 | `gb.reload_labels()` | `None` | Re-reads `labels/*.json` without restarting. |
