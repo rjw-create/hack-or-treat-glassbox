@@ -10,7 +10,8 @@ Several sessions work in parallel; who owns which paths is in `2026-10-31-ROLES.
 - This machine has a GPU shared with another hackathon project. Ask before starting long GPU jobs (training, large models).
 
 ## Status
-- Stack: Python 3.11 venv (`py -3.11 -m venv .venv`), torch (CPU build), transformers, sae-lens, gradio; pinned in `pyproject.toml`.
+- Stack: Python 3.11 venv (`py -3.11 -m venv .venv`), torch (CPU build), transformers, sae-lens; pinned in `pyproject.toml`.
+  UI (in `ui/`, owned by Surface): Gradio, as the optional `ui` extra (`pip install -e ".[ui]"`).
 - Model: `google/gemma-3-1b-it` (Gemma terms, gated: say "open-weight") + Gemma Scope 2 SAE
   `gemma-scope-2-1b-it-res` / `layer_13_width_16k_l0_medium` (CC-BY-4.0, credit Google DeepMind).
 - Hardware: Intel Arc 140V integrated GPU, no CUDA. Runs on CPU at ~10 tokens/s.
