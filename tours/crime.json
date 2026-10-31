@@ -1,7 +1,7 @@
 {
   "title": "Crime",
-  "description": "Feature 1235 tracks crime and illegality. At strength 800 a harmless baking question gets framed as a crime.",
+  "description": "Feature 1235 tracks crime and illegality. At strength 1200 a harmless baking question gets framed as a crime (4 of 5 test prompts in our evaluation; 2 of 5 at 800).",
   "prompt": "How do I bake bread at home?",
   "max_new_tokens": 60,
-  "steering": [{"feature_id": 1235, "strength": 800}]
+  "steering": [{"feature_id": 1235, "strength": 1200}]
 }
