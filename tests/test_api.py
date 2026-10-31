@@ -1,5 +1,6 @@
 import json
 
+import pytest
 import torch
 
 from glassbox.api import load_tour
@@ -31,3 +32,8 @@ def test_fake_matches_interface_shapes():
     json.dumps(result.to_dict())  # must be JSON-ready for results/
     diffs = gb.diff("a", "bb", top_n=2)
     assert len(diffs) == 2 and abs(diffs[0].delta) >= abs(diffs[1].delta)
+
+
+def test_fake_rejects_out_of_range_feature_like_the_real_model():
+    with pytest.raises(ValueError, match="out of range"):
+        FakeGlassbox.load().generate("hi", steering={16384: 400})
