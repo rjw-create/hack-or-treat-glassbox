@@ -4,14 +4,15 @@ Glassbox lets you look inside a language model while it writes. Type a prompt an
 
 It runs on your own machine. It uses Google's open-weight Gemma 3 models and the Gemma Scope 2 sparse autoencoders from Google DeepMind.
 
-> Status: work in progress (Hack or Treat hackathon, 2026-10-31). Steps marked TODO depend on code that has not landed yet.
+> Status: work in progress (Hack or Treat hackathon, 2026-10-31).
 
 ## What you need
 
 - Python 3.11
 - Git
 - A free Hugging Face account (needed to download Gemma 3; see below)
-- A GPU is recommended for the real model. You can try the interface without the model or a GPU by using `--fake` (see [Try it without the model](#try-it-without-the-model)).
+- No GPU needed. The real model runs on the CPU, or on an Intel GPU if you have PyTorch's Intel (XPU) build; NVIDIA GPUs are not used. Replies take a few seconds on a laptop CPU.
+- To try the interface without downloading the model, use `--fake` (see [Try it without the model](#try-it-without-the-model)).
 
 ## Install from a fresh clone
 
@@ -81,6 +82,7 @@ glassbox --fake
 
 ## What you can do
 
+- **Guided tours:** pick a tour to fill in a prompt and a steering setting that we have seen work.
 - **Reply:** type a prompt and read the model's answer.
 - **Per-token features:** click any token to see its top 5 features and what each one is labelled as.
 - **Steering:** slide a feature up or down and generate again.
@@ -89,9 +91,29 @@ glassbox --fake
 
 <!-- TODO: add screenshots once the UI exists. -->
 
+## How it works
+
+**The model.** Glassbox runs Google's Gemma 3 1B instruction-tuned model (`google/gemma-3-1b-it`) on your machine, in float32. Gemma is open-weight: you can download the weights, under Google's Gemma Terms of Use. That is not an OSI open-source licence.
+
+**Reading features.** The model has 26 layers, and each token is represented by 1,152 numbers between layers (model config: `num_hidden_layers`, `hidden_size`). Those numbers aren't readable on their own. After layer 13, Glassbox passes them through a sparse autoencoder (SAE) from Google DeepMind's Gemma Scope 2 (`gemma-scope-2-1b-it-res`, SAE `layer_13_width_16k_l0_medium`, loaded with SAELens). The SAE rewrites each token as activations over about 16,000 learned features, most of them zero. Many features track a recognisable concept, such as a language, a topic or a tone. Glassbox shows the 5 strongest features for each token.
+
+**Steering.** Each feature has a direction of length 1 in that same 1,152-number space. To steer, Glassbox adds `strength x direction` to layer 13's output at every token, so the rest of the model reads a nudged version. Strength uses the same units as feature activations. The features shown for each token are recorded before the nudge is added, so a steered feature doesn't appear to fire just because we pushed it.
+
+**Diff mode.** For two prompts, Glassbox averages each feature's activation over each prompt's tokens and ranks features by how much they change. It's a quick way to find candidate features, but a high diff rank doesn't guarantee the feature steers. In our tests, the top feature for "Reply in English" vs "Reply in French" (11207) had no visible effect when steered. Always confirm with steering.
+
+**What we observed.** These come from greedy decoding on one prompt per feature, 30-60 tokens. They are observations, not proof. The measured table is in [`docs/2026-10-31-interface.md`](docs/2026-10-31-interface.md).
+- Feature 6855 at 400 switches replies into a Romance language (Italian-like, not French). By 1,200 the text is garbled.
+- Feature 544 adds "you're absolutely right" style agreement. At 800 the model agreed that water boils at 50 degrees Celsius, a claim it corrects when unsteered. It stayed fluent up to 1,600.
+- Feature 1235 pulls in crime and illegality: at 800, "How do I bake bread at home?" turns into a warning about crime.
+- We did not find a refusal feature this way.
+
+**Limits.** One model, one layer, one SAE. The labels in `labels/curated.json` are written by hand from observed behaviour. Steering effects vary by prompt.
+
+<!-- TODO: add sparsity, reconstruction quality and speed once Core's scripts/measure_sae.py and Proof's results/ are on main, citing those files. -->
+
 ## How this differs from Neuronpedia
 
-[Neuronpedia](https://www.neuronpedia.org) is the main tool for exploring Gemma Scope features, and Google links to its interactive Gemma Scope 2 demo from the Gemma Scope 2 page. It is open source and offers a free hosted website, an API, steering, feature dashboards with AI-written explanations, and instructions for self-hosting. If you want to browse features without installing anything, use Neuronpedia.
+[Neuronpedia](https://www.neuronpedia.org) ([source code](https://github.com/hijohnnylin/neuronpedia)) is the main tool for exploring Gemma Scope features, and Google links to its interactive Gemma Scope 2 demo from the Gemma Scope 2 page. It is open source and offers a free hosted website, an API, steering, feature dashboards with AI-written explanations, and instructions for self-hosting. If you want to browse features without installing anything, use Neuronpedia.
 
 Glassbox is smaller and aims at a different job:
 
@@ -112,6 +134,7 @@ What Glassbox does not do (yet):
 
 - **Gemma Scope 2** by Google DeepMind: sparse autoencoders and transcoders for the Gemma 3 family, released under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Source: https://huggingface.co/google/gemma-scope-2. Technical report: [Gemma Scope 2 technical paper](https://storage.googleapis.com/deepmind-media/DeepMind.com/Blog/gemma-scope-2-helping-the-ai-safety-community-deepen-understanding-of-complex-language-model-behavior/Gemma_Scope_2_Technical_Paper.pdf).
 - **Gemma 3** by Google: open-weight models, used under the [Gemma Terms of Use](https://ai.google.dev/gemma/terms). Glassbox does not redistribute the weights; you download them from Hugging Face yourself.
+- **SAELens**: loading the sparse autoencoders.
 - **Neuronpedia** (Johnny Lin): inspiration and the reference tool in this space.
 
 ## License

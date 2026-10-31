@@ -4,12 +4,14 @@ Run from the repo root:  python ui/app.py          (real model, needs the Huggin
                          python ui/app.py --fake   (sample data, no download or GPU)
 """
 import argparse
+from pathlib import Path
 
 import gradio as gr
 
-from glassbox.api import STEERING_LIMIT, Glassbox
+from glassbox.api import STEERING_LIMIT, Glassbox, load_tour
 from glassbox.fake import FakeGlassbox
 
+TOURS_DIR = Path(__file__).resolve().parent.parent / "tours"
 STEERING_ROWS = 3
 STEERING_STEP = 50
 MAX_NEW_TOKENS = 60
@@ -49,21 +51,42 @@ def diff_rows(diffs) -> list[list]:
     return [[d.feature_id, d.label, round(d.mean_a, 1), round(d.mean_b, 1), round(d.delta, 1)] for d in diffs]
 
 
-def build_app(gb, fake: bool = False) -> gr.Blocks:
-    # Decoding is greedy, so the unsteered reply for a prompt never changes and is safe to reuse.
-    baseline_cache: dict[str, object] = {}
+def load_tours(tours_dir: Path) -> dict[str, dict]:
+    """Tours keyed by title, in file-name order. A missing folder just means no tours."""
+    tours = [load_tour(path) for path in sorted(Path(tours_dir).glob("*.json"))]
+    return {tour["title"]: tour for tour in tours}
 
-    def run(prompt, *steer_inputs):
+
+def tour_inputs(tour: dict) -> list:
+    """Values for [prompt, max_new_tokens, *feature_ids, *strengths]; unused steering rows are cleared."""
+    steering = list(tour["steering"].items())[:STEERING_ROWS]
+    padding = [None] * (STEERING_ROWS - len(steering))
+    feature_ids = [feature_id for feature_id, _ in steering] + padding
+    strengths = [strength for _, strength in steering] + [0] * len(padding)
+    return [tour["prompt"], tour.get("max_new_tokens", MAX_NEW_TOKENS), *feature_ids, *strengths]
+
+
+def build_app(gb, fake: bool = False, tours_dir: Path = TOURS_DIR) -> gr.Blocks:
+    tours = load_tours(tours_dir)
+    # Decoding is greedy, so the unsteered reply for a prompt never changes and is safe to reuse.
+    baseline_cache: dict[tuple[str, int], object] = {}
+
+    def run(prompt, max_new_tokens, *steer_inputs):
         if not prompt or not prompt.strip():
             raise gr.Error("Type a prompt first.")
         try:
             steering = steering_from_inputs(steer_inputs[:STEERING_ROWS], steer_inputs[STEERING_ROWS:])
         except ValueError as err:
             raise gr.Error(str(err))
-        if prompt not in baseline_cache:
-            baseline_cache[prompt] = gb.generate(prompt, max_new_tokens=MAX_NEW_TOKENS)
-        baseline = baseline_cache[prompt]
-        result = gb.generate(prompt, max_new_tokens=MAX_NEW_TOKENS, steering=steering) if steering else baseline
+        max_new_tokens = int(max_new_tokens)
+        key = (prompt, max_new_tokens)
+        try:
+            if key not in baseline_cache:
+                baseline_cache[key] = gb.generate(prompt, max_new_tokens=max_new_tokens)
+            baseline = baseline_cache[key]
+            result = gb.generate(prompt, max_new_tokens=max_new_tokens, steering=steering) if steering else baseline
+        except ValueError as err:  # e.g. a feature ID outside the SAE's range
+            raise gr.Error(str(err))
         return (
             gr.Textbox(value=result.text, label="Steered reply" if steering else "Reply"),
             gr.Textbox(value=baseline.text, visible=bool(steering)),
@@ -82,6 +105,12 @@ def build_app(gb, fake: bool = False) -> gr.Blocks:
             description += ": no features, because the model never reads its own final token"
         return description, feature_rows(gb, token)
 
+    def pick_tour(title):
+        if not title:
+            return ["", *[gr.skip()] * (2 + 2 * STEERING_ROWS)]
+        tour = tours[title]
+        return [tour.get("description", ""), *tour_inputs(tour)]
+
     def run_diff(prompt_a, prompt_b):
         if not prompt_a.strip() or not prompt_b.strip():
             raise gr.Error("Type both prompts first.")
@@ -93,12 +122,18 @@ def build_app(gb, fake: bool = False) -> gr.Blocks:
             gr.Markdown("**Fake mode:** sample data, not real model output.")
 
         with gr.Tab("Explore"):
+            tour_picker = gr.Dropdown(
+                choices=list(tours), value=None, label="Guided tour (fills in a prompt and steering)", visible=bool(tours)
+            )
+            # Tour descriptions come from tours/*.json in this repo, not from the user, so Markdown is safe here.
+            tour_description = gr.Markdown()
             prompt = gr.Textbox(label="Prompt", lines=2)
             with gr.Accordion("Steering", open=False):
                 gr.Markdown(
                     "Enter a feature ID and push it up or down. Strength is in feature-activation units: "
                     "around 400 changes the wording; much higher can break the reply."
                 )
+                max_new_tokens = gr.Slider(minimum=10, maximum=120, value=MAX_NEW_TOKENS, step=10, label="Max new tokens")
                 feature_ids, strengths = [], []
                 for row in range(STEERING_ROWS):
                     with gr.Row():
@@ -134,9 +169,14 @@ def build_app(gb, fake: bool = False) -> gr.Blocks:
             diff_table = gr.Dataframe(headers=DIFF_HEADERS, interactive=False)
 
         # Generate and Diff share one model and one feature hook, so they must never run at the same time.
+        tour_picker.change(
+            pick_tour,
+            inputs=tour_picker,
+            outputs=[tour_description, prompt, max_new_tokens, *feature_ids, *strengths],
+        )
         generate_button.click(
             run,
-            inputs=[prompt, *feature_ids, *strengths],
+            inputs=[prompt, max_new_tokens, *feature_ids, *strengths],
             outputs=[reply, baseline_reply, tokens, result_state, selected, features],
             concurrency_id="model",
         )

@@ -1,0 +1,7 @@
+{
+  "title": "Romance language",
+  "description": "Feature 6855 at strength 400 pushes the reply into a Romance language (Italian-like, not French). Try 800 to see it go too far and turn garbled.",
+  "prompt": "Describe your favourite season in two sentences.",
+  "max_new_tokens": 60,
+  "steering": [{"feature_id": 6855, "strength": 400}]
+}
