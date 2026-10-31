@@ -73,6 +73,16 @@ def test_perf_measures_cache_and_speed(tmp_path):
     assert all(r["tokens_per_s"] > 0 for r in gens)
 
 
+def test_steering_rerun_flags_keep_earlier_results(tmp_path):
+    out = ["--fake", "--out-dir", str(tmp_path)]
+    assert run_steering.main(out) == 0
+    args = ["--feature-id", "101", "--n-prompts", "2", "--strengths", "0", "400", "--name", "steering_f101"]
+    assert run_steering.main(out + args) == 0
+    assert len((tmp_path / "steering_fake.jsonl").read_text(encoding="utf-8").splitlines()) == 61
+    rerun = (tmp_path / "steering_f101_fake.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(rerun) == 2 * 2 + 1  # 2 prompts x 2 strengths + the collapse row
+
+
 def test_mains_write_jsonl_and_summary(tmp_path):
     out = ["--fake", "--out-dir", str(tmp_path)]
     for module in (run_steering, run_diff, run_determinism, run_perf):

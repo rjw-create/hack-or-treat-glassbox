@@ -71,11 +71,16 @@ def run(gb, feature_id: int | None = None, prompts=PROMPTS, strengths_units=STRE
 
 def main(argv=None) -> int:
     utf8_stdout()
-    args = parse_args(__doc__.splitlines()[0], argv,
-                      lambda p: p.add_argument("--feature-id", type=int, help="feature to steer (default: found with gb.diff)"))
+    def extra(p):
+        p.add_argument("--feature-id", type=int, help="feature to steer (default: found with gb.diff)")
+        p.add_argument("--n-prompts", type=int, default=len(PROMPTS), help="use only the first N prompts (shorter run)")
+        p.add_argument("--strengths", type=float, nargs="+", default=STRENGTHS_UNITS, help="strengths in feature-activation units")
+        p.add_argument("--name", default="steering", help="results file name, so a rerun on another feature keeps earlier rows")
+
+    args = parse_args(__doc__.splitlines()[0], argv, extra)
     gb, _ = load_glassbox(args.fake)
-    rows = run(gb, feature_id=args.feature_id)
-    path = results_path(args.out_dir, "steering", args.fake)
+    rows = run(gb, feature_id=args.feature_id, prompts=PROMPTS[: args.n_prompts], strengths_units=args.strengths)
+    path = results_path(args.out_dir, args.name, args.fake)
     write_jsonl(path, rows)
     print(f"wrote {len(rows)} rows to {path}")
     return 0
