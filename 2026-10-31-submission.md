@@ -1,7 +1,8 @@
 # Glassbox: Hack or Treat 2026 submission
 
-**Category:** Best Open-Source AI Project
-**Repository:** https://github.com/rjw-create/hack-or-treat-glassbox (Apache 2.0)
+**Category:** Best Open-Source AI Project  
+**Repository:** https://github.com/rjw-create/hack-or-treat-glassbox (Apache 2.0)  
+**Live demo:** https://rjw-create.github.io/hack-or-treat-glassbox/demo/ (precomputed real outputs; the full tool runs locally)
 
 ## One line
 Glassbox lets you watch which sparse-autoencoder features fire, token by token, as an open-weight language model writes, and steer those features up or down to see how the reply changes.

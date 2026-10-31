@@ -4,6 +4,8 @@ Glassbox lets you look inside a language model while it writes. Type a prompt an
 
 It runs on your own machine. It uses Google's open-weight Gemma 3 models and the Gemma Scope 2 sparse autoencoders from Google DeepMind.
 
+**Live demo:** [https://rjw-create.github.io/hack-or-treat-glassbox/demo/](https://rjw-create.github.io/hack-or-treat-glassbox/demo/). It shows precomputed real outputs, unsteered next to steered; the full tool runs locally.
+
 > Status: work in progress (Hack or Treat hackathon, 2026-10-31).
 
 ## What you need
