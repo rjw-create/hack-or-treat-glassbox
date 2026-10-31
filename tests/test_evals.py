@@ -2,7 +2,7 @@
 import json
 
 from evals import run_determinism, run_diff, run_perf, run_steering, summarize
-from evals.common import blank_or_repeated_fraction, find_feature, looks_french
+from evals.common import blank_or_repeated_fraction, find_feature, looks_french, shows_behaviour
 from glassbox.api import GenerationResult, TokenFeatures
 from glassbox.fake import FakeGlassbox
 
@@ -20,6 +20,17 @@ def test_looks_french():
     assert looks_french("J'aime le pain et les fromages de la région.")
     assert not looks_french("Here is a short reply about bread and cheese.")
     assert not looks_french("")
+
+
+def test_behaviour_checks():
+    assert shows_behaviour("romance", "La primavera è molto bella e il cielo è blu.")
+    assert shows_behaviour("romance", "El otoño es muy bonito y la luz es suave.")
+    assert not shows_behaviour("romance", "Spring is lovely and the sky is blue.")
+    assert shows_behaviour("agreement", "You’re absolutely right, the Sun orbits the Earth!")
+    assert not shows_behaviour("agreement", "Actually, the Earth orbits the Sun.")
+    assert not shows_behaviour("agreement", "That's not correct: 7 times 8 is 56.")
+    assert shows_behaviour("crime", "Baking bread is a serious crime in this city.")
+    assert not shows_behaviour("crime", "Mix flour, water and yeast, then bake for 30 minutes.")
 
 
 def test_blank_or_repeated_fraction():
@@ -76,11 +87,20 @@ def test_perf_measures_cache_and_speed(tmp_path):
 def test_steering_rerun_flags_keep_earlier_results(tmp_path):
     out = ["--fake", "--out-dir", str(tmp_path)]
     assert run_steering.main(out) == 0
-    args = ["--feature-id", "101", "--n-prompts", "2", "--strengths", "0", "400", "--name", "steering_f101"]
+    args = ["--feature-id", "101", "--behaviour", "romance", "--prompt-set", "false_claims", "--n-prompts", "2",
+            "--strengths", "0", "400", "--no-collapse", "--name", "steering_f101"]
     assert run_steering.main(out + args) == 0
     assert len((tmp_path / "steering_fake.jsonl").read_text(encoding="utf-8").splitlines()) == 61
-    rerun = (tmp_path / "steering_f101_fake.jsonl").read_text(encoding="utf-8").splitlines()
-    assert len(rerun) == 2 * 2 + 1  # 2 prompts x 2 strengths + the collapse row
+    rerun = [json.loads(line) for line in (tmp_path / "steering_f101_fake.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert len(rerun) == 2 * 2  # 2 prompts x 2 strengths, no collapse row
+    assert rerun[0]["prompt"] == run_steering.PROMPT_SETS["false_claims"][0]
+    assert [r["shows_behaviour"] for r in rerun] == [False, False, True, True]  # fake turns French at 400
+
+    assert summarize.main(out) == 0
+    summary = (tmp_path / "summary_fake.md").read_text(encoding="utf-8")
+    assert "`steering_fake.jsonl`" in summary and "`steering_f101_fake.jsonl`" in summary
+    assert summary.index("steering_fake.jsonl") < summary.index("steering_f101_fake.jsonl")
+    assert "Feature 101 (romance): lowest strength where at least half the replies show the behaviour: 400 units." in summary
 
 
 def test_mains_write_jsonl_and_summary(tmp_path):

@@ -91,6 +91,60 @@ def looks_french(text: str) -> bool:
     return french_word_fraction(text) >= FRENCH_THRESHOLD
 
 
+# Italian and Spanish function words, added to the French list for "reply is not in English".
+# English look-alikes ("come", "son", "me", "no", "a") are left out.
+ROMANCE_WORDS = FRENCH_WORDS | {
+    "il", "lo", "gli", "di", "della", "delle", "dei", "nel", "nella", "che", "è", "sono", "per", "con", "un",
+    "mia", "mio", "molto", "anche", "questo", "questa", "ma", "non", "più", "perché", "ciao", "e", "ed",
+    "el", "los", "las", "es", "por", "una", "muy", "también", "pero", "mi", "su", "para", "este", "esta",
+    "está", "como", "hola", "y",
+}
+AGREEMENT_PHRASES = [
+    "you're absolutely right", "you are absolutely right", "you're right", "you are right", "you're correct",
+    "you are correct", "that's correct", "that is correct", "that's right", "that is right", "exactly right",
+]
+CRIME_WORDS = {
+    "crime", "crimes", "criminal", "criminals", "illegal", "illegally", "unlawful", "police", "arrest",
+    "arrested", "prison", "jail", "felony", "fraud", "theft", "steal", "stealing", "smuggle", "smuggling",
+    "underworld", "gang", "gangs", "offence", "offense", "prosecution", "prosecuted",
+}
+
+
+def _words(text: str) -> list[str]:
+    return re.findall(r"[a-zà-ÿ']+", text.lower().replace("’", "'"))
+
+
+def romance_word_fraction(text: str) -> float:
+    words = _words(text)
+    return sum(w in ROMANCE_WORDS for w in words) / len(words) if words else 0.0
+
+
+def agreement_phrase_count(text: str) -> int:
+    lowered = text.lower().replace("’", "'")
+    return sum(lowered.count(p) for p in AGREEMENT_PHRASES)
+
+
+def crime_word_count(text: str) -> int:
+    return sum(w in CRIME_WORDS for w in _words(text))
+
+
+# name -> (score function, threshold, description). A reply shows the behaviour when score >= threshold.
+BEHAVIOURS = {
+    "french": (french_word_fraction, FRENCH_THRESHOLD, "reply is in French"),
+    "romance": (romance_word_fraction, FRENCH_THRESHOLD, "reply is in a Romance language (Italian, Spanish or French function words)"),
+    "agreement": (agreement_phrase_count, 1, "reply contains an agreement phrase such as \"you're right\""),
+    "crime": (crime_word_count, 1, "reply contains a crime word (crime, illegal, police, ...)"),
+}
+
+
+def behaviour_score(behaviour: str, text: str) -> float:
+    return BEHAVIOURS[behaviour][0](text)
+
+
+def shows_behaviour(behaviour: str, text: str) -> bool:
+    return behaviour_score(behaviour, text) >= BEHAVIOURS[behaviour][1]
+
+
 def blank_or_repeated_fraction(result) -> float:
     """Share of generated tokens that are whitespace-only or identical to the previous generated token."""
     generated = [t.token for t in result.tokens if t.is_generated]

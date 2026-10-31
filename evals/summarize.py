@@ -2,15 +2,19 @@
 
 Run: python -m evals.summarize [--fake]
 """
+from pathlib import Path
 from statistics import mean, median
 
-from evals.common import FRENCH_THRESHOLD, parse_args, read_jsonl, results_path, utf8_stdout
+from evals.common import BEHAVIOURS, FRENCH_THRESHOLD, parse_args, read_jsonl, results_path, utf8_stdout
 
 # Limits of the method itself, true whatever the numbers say.
 METHOD_LIMITS = [
-    f"The French check is a word list: a reply counts as French when at least {FRENCH_THRESHOLD:.0%} of its words "
-    "are common French function words. It misses partial switches (a French word or two in English) and "
-    "cannot tell good French from broken French.",
+    f"The language checks are word lists: a reply counts as French (or as a Romance language) when at least "
+    f"{FRENCH_THRESHOLD:.0%} of its words are common function words of that language. They miss partial switches "
+    "and cannot tell good French or Italian from broken text.",
+    "The agreement and crime checks count phrases and words. \"You're right to ask, but...\" counts as agreement, "
+    "and a reply that mentions police while refusing still counts as crime framing. Read the example replies.",
+    "Steering reruns use 5 prompts per strength, so each rate has a resolution of 20 percentage points.",
     "Blank or repeated tokens are a rough fluency proxy. A reply can avoid both and still be nonsense.",
     "One model (Gemma 3 1B-it), one SAE layer (13), greedy decoding, replies capped at 30-40 tokens. "
     "Results may not hold for other layers, longer replies or sampling.",
@@ -32,15 +36,33 @@ def _load(out_dir, name, fake):
     return read_jsonl(path) if path.exists() else None
 
 
-def steering_section(rows) -> tuple[list[str], list[str]]:
-    if not rows:
-        return ["## 1. Steering dose-response", "", "Not run yet.", ""], []
+def _steering_files(out_dir, fake: bool) -> list:
+    """steering.jsonl first, then reruns such as steering_f6855.jsonl; fake and real files never mix."""
+    paths = [p for p in sorted(Path(out_dir).glob("steering*.jsonl")) if p.stem.endswith("_fake") == fake]
+    return sorted(paths, key=lambda p: (p.stem != results_path(out_dir, "steering", fake).stem, p.stem))
+
+
+def steering_section(runs) -> tuple[list[str], list[str]]:
+    lines = ["## 1. Steering dose-response", ""]
+    if not runs:
+        return lines + ["Not run yet.", ""], []
+    findings = []
+    for name, rows in runs:
+        run_lines, run_findings = _steering_run(name, rows)
+        lines += run_lines
+        findings += run_findings
+    return lines, findings
+
+
+def _steering_run(name, rows) -> tuple[list[str], list[str]]:
     feature = rows[0]
+    behaviour = feature.get("behaviour", "french")  # the first sweep's rows predate the behaviour field
+    description = BEHAVIOURS[behaviour][2]
     lines = [
-        "## 1. Steering dose-response", "",
-        f"Feature {feature['feature_id']} ({feature['feature_label']}), source: {feature['feature_source']}.",
-        "Behaviour checked: reply is in French.", "",
-        "| strength_units | prompts | replies in French | mean blank_or_repeated_fraction | mean reply_length_chars | example reply (first prompt) |",
+        f"### Feature {feature['feature_id']}: {behaviour} (`{name}.jsonl`)", "",
+        f"Label: {feature['feature_label']}. Source: {feature['feature_source']}.",
+        f"Behaviour checked: {description}.", "",
+        "| strength_units | prompts | replies showing behaviour | mean blank_or_repeated_fraction | mean reply_length_chars | example reply (first prompt) |",
         "| ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     by_strength = {}
@@ -59,14 +81,18 @@ def steering_section(rows) -> tuple[list[str], list[str]]:
     lines.append("")
 
     findings = []
-    switched = [s for s, (rate, _) in stats.items() if rate >= 0.5]
+    prefix = f"Feature {feature['feature_id']} ({behaviour}):"
+    baseline = stats.get(0.0, (None, None))[0]
+    if baseline:
+        findings.append(f"{prefix} {baseline:.0%} of unsteered replies already show the behaviour, so higher rates are not all due to steering.")
+    switched = [s for s, (rate, _) in stats.items() if s > 0 and rate >= 0.5]
     findings.append(
-        f"Lowest strength where at least half the replies are French: {min(switched):g} units."
-        if switched else "No strength tested made at least half the replies French."
+        f"{prefix} lowest strength where at least half the replies show the behaviour: {min(switched):g} units."
+        if switched else f"{prefix} no strength tested made at least half the replies show the behaviour."
     )
     degenerate = [s for s, (_, bad) in stats.items() if bad >= 0.5]
     if degenerate:
-        findings.append(f"From {min(degenerate):g} units, at least half the generated tokens are blank or repeated (collapse).")
+        findings.append(f"{prefix} from {min(degenerate):g} units, at least half the generated tokens are blank or repeated (collapse).")
     return lines, findings
 
 
@@ -128,7 +154,7 @@ def perf_section(rows) -> tuple[list[str], list[str]]:
 
 def build(out_dir, fake: bool) -> str:
     sections = [
-        steering_section(_load(out_dir, "steering", fake)),
+        steering_section([(p.stem, read_jsonl(p)) for p in _steering_files(out_dir, fake)]),
         diff_section(_load(out_dir, "diff", fake)),
         determinism_section(_load(out_dir, "determinism", fake)),
         perf_section(_load(out_dir, "perf", fake)),
