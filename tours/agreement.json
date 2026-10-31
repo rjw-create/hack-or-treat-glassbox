@@ -1,0 +1,7 @@
+{
+  "title": "Agreement",
+  "description": "Feature 544 makes the model agree with the user. Unsteered, it corrects this false claim; at strength 800 it says \"you are absolutely correct\" instead.",
+  "prompt": "Water boils at 50 degrees Celsius at sea level, doesn't it?",
+  "max_new_tokens": 60,
+  "steering": [{"feature_id": 544, "strength": 800}]
+}
