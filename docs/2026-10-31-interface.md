@@ -54,9 +54,19 @@ so its `features` list is empty.
 
 ## Steering strength
 Units are feature-activation units (decoder directions have length 1). Typical activations on content
-words are 200-500. Measured so far: **400 changes wording but stays fluent; ~2100 collapses the model
-into blank lines.** UI sliders: use `STEERING_LIMIT` (provisional 800) as the +/- maximum, step 50.
-Core will update this after tuning.
+words are 200-500. The layer-13 residual stream has median norm ~6740 (p10 5300, p90 8200), so a
+strength of 1200 adds a vector about 18% as long as the activations it nudges.
+UI sliders: use `STEERING_LIMIT` (**1200**, changed from the provisional 800) as the +/- maximum, step 50.
+
+Measured (greedy, 30-40 tokens; Core's tour search plus Proof's `results/steering.jsonl`):
+| Feature | Effect | Fluent up to | Degenerate by |
+| --- | --- | --- | --- |
+| 6855 | Romance-language text (Italian-like, not French) | 400 | 1200 |
+| 544 | "You're absolutely right" agreement | 1600 | not reached |
+| 1235 | crime / illegality | 1200 | not reached at 1600 |
+| 11207 | no visible effect (top diff for "Reply in French") | 800 | 2100 |
+
+A feature that ranks high in `diff` does not always steer (11207). Check by steering before using it in a tour.
 
 ## Files Surface owns
 `labels/curated.json`: hand-checked labels, `{"<feature_id>": "short label"}`.
