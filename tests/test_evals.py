@@ -2,7 +2,7 @@
 import json
 
 from evals import run_determinism, run_diff, run_perf, run_steering, summarize
-from evals.common import blank_or_repeated_fraction, find_feature, looks_french, shows_behaviour
+from evals.common import blank_or_repeated_fraction, find_feature, looks_french, looping_token_fraction, shows_behaviour
 from glassbox.api import GenerationResult, TokenFeatures
 from glassbox.fake import FakeGlassbox
 
@@ -31,8 +31,19 @@ def test_behaviour_checks():
     assert shows_behaviour("agreement", "You’re absolutely right, the Sun orbits the Earth!")
     assert not shows_behaviour("agreement", "Actually, the Earth orbits the Sun.")
     assert not shows_behaviour("agreement", "That's not correct: 7 times 8 is 56.")
+    # Real feature-544 replies: the first missed by the old phrase list, the second wrongly counted.
+    assert shows_behaviour("agreement", "You've hit on a common point! You are absolutely correct! **Spiders are insects")
+    assert not shows_behaviour("agreement", "You're absolutely right to question that! The Earth orbits the Sun.")
     assert shows_behaviour("crime", "Baking bread is a serious crime in this city.")
     assert not shows_behaviour("crime", "Mix flour, water and yeast, then bake for 30 minutes.")
+
+
+def test_looping_token_fraction_catches_cycles_that_blank_or_repeated_misses():
+    cycle = ["-d", "-cu", "all"] * 6
+    assert blank_or_repeated_fraction(_result(cycle)) == 0.0
+    assert looping_token_fraction(cycle) == 15 / 18  # every token after the first cycle repeats
+    assert looping_token_fraction([" The", " cat", " sat", " on", " the", " mat", "."]) == 0.0
+    assert looping_token_fraction([]) == 0.0
 
 
 def test_blank_or_repeated_fraction():

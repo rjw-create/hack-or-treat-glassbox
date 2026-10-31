@@ -5,17 +5,25 @@ Run: python -m evals.summarize [--fake]
 from pathlib import Path
 from statistics import mean, median
 
-from evals.common import BEHAVIOURS, FRENCH_THRESHOLD, parse_args, read_jsonl, results_path, utf8_stdout
+from evals.common import (
+    BEHAVIOURS, FRENCH_THRESHOLD, LOOP_WINDOW_TOKENS, generated_tokens, looping_token_fraction, parse_args, read_jsonl,
+    results_path, shows_behaviour, utf8_stdout,
+)
 
 # Limits of the method itself, true whatever the numbers say.
 METHOD_LIMITS = [
     f"The language checks are word lists: a reply counts as French (or as a Romance language) when at least "
     f"{FRENCH_THRESHOLD:.0%} of its words are common function words of that language. They miss partial switches "
     "and cannot tell good French or Italian from broken text.",
-    "The agreement and crime checks count phrases and words. \"You're right to ask, but...\" counts as agreement, "
-    "and a reply that mentions police while refusing still counts as crime framing. Read the example replies.",
+    "The agreement check looks for \"you're (absolutely) right/correct\" and \"that's right\". It counts the "
+    "phrase, not whether the reply endorses the false claim: \"You are absolutely correct! 7 times 8 is indeed 56\" "
+    "counts although the model then corrects the user. The crime check counts crime words, so a reply that "
+    "mentions police while refusing still counts as crime framing. Read the example replies.",
     "Steering reruns use 5 prompts per strength, so each rate has a resolution of 20 percentage points.",
-    "Blank or repeated tokens are a rough fluency proxy. A reply can avoid both and still be nonsense.",
+    "Blank or repeated tokens are a rough fluency proxy. A reply can avoid both and still be nonsense: at 1200 "
+    "units feature 6855 produced loops like \"d-cuall-d-cuall\" with 0% blank or repeated tokens. "
+    f"looping_token_fraction (tokens that repeat one of the previous {LOOP_WINDOW_TOKENS}) catches those loops, "
+    "but its window was tuned on these same runs. Garbled text that does not loop is caught by neither: read the example replies.",
     "One model (Gemma 3 1B-it), one SAE layer (13), greedy decoding, replies capped at 30-40 tokens. "
     "Results may not hold for other layers, longer replies or sampling.",
     "Diff sanity uses a handful of hand-written prompt pairs; the expected feature is whatever the anchor "
@@ -62,8 +70,9 @@ def _steering_run(name, rows) -> tuple[list[str], list[str]]:
         f"### Feature {feature['feature_id']}: {behaviour} (`{name}.jsonl`)", "",
         f"Label: {feature['feature_label']}. Source: {feature['feature_source']}.",
         f"Behaviour checked: {description}.", "",
-        "| strength_units | prompts | replies showing behaviour | mean blank_or_repeated_fraction | mean reply_length_chars | example reply (first prompt) |",
-        "| ---: | ---: | ---: | ---: | ---: | --- |",
+        "| strength_units | prompts | replies showing behaviour | mean blank_or_repeated_fraction | "
+        "mean looping_token_fraction | mean reply_length_chars | example reply (first prompt) |",
+        "| ---: | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     by_strength = {}
     for r in rows:
@@ -71,11 +80,15 @@ def _steering_run(name, rows) -> tuple[list[str], list[str]]:
     stats = {}
     for s in sorted(by_strength):
         group = by_strength[s]
-        french = sum(r["shows_behaviour"] for r in group)
+        # Recomputed from the saved reply text, so every file is judged by the current checks
+        # (the stored shows_behaviour is what the check said at run time).
+        french = sum(shows_behaviour(behaviour, r["result"]["text"]) for r in group)
         bad = mean(r["blank_or_repeated_fraction"] for r in group)
-        stats[s] = (french / len(group), bad)
+        # Computed from the raw tokens, so files written before this metric existed get it too.
+        looping = mean(looping_token_fraction(generated_tokens(r["result"])) for r in group)
+        stats[s] = (french / len(group), max(bad, looping))
         lines.append(
-            f"| {s:g} | {len(group)} | {french}/{len(group)} | {bad:.2f} | "
+            f"| {s:g} | {len(group)} | {french}/{len(group)} | {bad:.2f} | {looping:.2f} | "
             f"{mean(r['reply_length_chars'] for r in group):.0f} | {_cell(group[0]['result']['text'])} |"
         )
     lines.append("")
@@ -92,7 +105,8 @@ def _steering_run(name, rows) -> tuple[list[str], list[str]]:
     )
     degenerate = [s for s, (_, bad) in stats.items() if bad >= 0.5]
     if degenerate:
-        findings.append(f"{prefix} from {min(degenerate):g} units, at least half the generated tokens are blank or repeated (collapse).")
+        findings.append(f"{prefix} from {min(degenerate):g} units, at least half the generated tokens are blank, "
+                        f"repeated or looping (collapse).")
     return lines, findings
 
 

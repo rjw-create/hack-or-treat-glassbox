@@ -99,10 +99,11 @@ ROMANCE_WORDS = FRENCH_WORDS | {
     "el", "los", "las", "es", "por", "una", "muy", "también", "pero", "mi", "su", "para", "este", "esta",
     "está", "como", "hola", "y",
 }
-AGREEMENT_PHRASES = [
-    "you're absolutely right", "you are absolutely right", "you're right", "you are right", "you're correct",
-    "you are correct", "that's correct", "that is correct", "that's right", "that is right", "exactly right",
-]
+# "You're (absolutely) right/correct" or "that's (exactly) right", but not "you're right to question that",
+# which praises the question rather than agreeing with the claim (seen on unsteered 1B replies).
+AGREEMENT_RE = re.compile(
+    r"\b(?:you're|you are|that's|that is)(?: absolutely| completely| totally| exactly)? (?:right|correct)\b(?! to\b)"
+)
 CRIME_WORDS = {
     "crime", "crimes", "criminal", "criminals", "illegal", "illegally", "unlawful", "police", "arrest",
     "arrested", "prison", "jail", "felony", "fraud", "theft", "steal", "stealing", "smuggle", "smuggling",
@@ -120,8 +121,7 @@ def romance_word_fraction(text: str) -> float:
 
 
 def agreement_phrase_count(text: str) -> int:
-    lowered = text.lower().replace("’", "'")
-    return sum(lowered.count(p) for p in AGREEMENT_PHRASES)
+    return len(AGREEMENT_RE.findall(text.lower().replace("’", "'")))
 
 
 def crime_word_count(text: str) -> int:
@@ -152,6 +152,25 @@ def blank_or_repeated_fraction(result) -> float:
         return 0.0
     bad = sum(tok.strip() == "" or (i > 0 and tok == generated[i - 1]) for i, tok in enumerate(generated))
     return bad / len(generated)
+
+
+# Collapse often cycles through a few tokens ("-d", "-cuall", "-d", "-cuall"), which the blank/repeated
+# check misses because no token equals the one right before it.
+# 8 tokens, chosen on the first runs: fluent replies (0-800 units) scored at most 0.17 and collapsed ones
+# (1200, 2100 units) at least 0.60. A window of 4 missed longer cycles; 12 flagged a fluent reply.
+LOOP_WINDOW_TOKENS = 8
+
+
+def looping_token_fraction(tokens: list[str], window: int = LOOP_WINDOW_TOKENS) -> float:
+    """Share of tokens that repeat one of the previous `window` tokens. Takes token strings so the summary
+    can compute it from raw rows written before this metric existed."""
+    if not tokens:
+        return 0.0
+    return sum(tok in tokens[max(0, i - window):i] for i, tok in enumerate(tokens)) / len(tokens)
+
+
+def generated_tokens(result_dict: dict) -> list[str]:
+    return [t["token"] for t in result_dict["tokens"] if t["is_generated"]]
 
 
 def generated_token_count(result) -> int:
