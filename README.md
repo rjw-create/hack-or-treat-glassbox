@@ -26,6 +26,14 @@ py -3.11 -m venv .venv
 pip install -e ".[ui]"
 ```
 
+If `Activate.ps1` fails with "running scripts is disabled on this system", allow scripts for this PowerShell window only, then run the activate line again:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+This lasts until you close the window and doesn't change your system settings.
+
 macOS / Linux:
 
 ```bash
@@ -37,6 +45,8 @@ pip install -e ".[ui]"
 ```
 
 Install from a clone like this rather than from a package index: the guided tours (`tours/`) and feature labels (`labels/`) load from the repository folder.
+
+The install downloads PyTorch and other large packages, so it can take several minutes. To try the interface straight away, without a Hugging Face account, skip to [Try it without the model](#try-it-without-the-model).
 
 
 ## Hugging Face login (needed for the real model)
