@@ -43,8 +43,9 @@ def test_feature_and_diff_rows_carry_labels():
     assert rows and all(len(row) == 5 for row in rows)
 
 
-def test_app_builds_with_fake_backend():
-    build_app(FakeGlassbox.load(), fake=True)
+def test_app_builds_with_fake_backend_and_no_telemetry():
+    app = build_app(FakeGlassbox.load(), fake=True)
+    assert app.analytics_enabled is False
 
 
 def test_tour_fills_first_row_and_clears_the_rest(tmp_path):
