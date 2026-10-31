@@ -1,0 +1,5 @@
+{"eval": "perf", "kind": "load", "load_time_s": 6.08, "download_mb": {"models--google--gemma-3-1b-it": 2034.4, "models--google--gemma-scope-2-1b-it": 151.1}, "download_total_mb": 2185.5, "device": "cpu", "cpu_count": 8, "processor": "Intel64 Family 6 Model 189 Stepping 1, GenuineIntel"}
+{"eval": "perf", "kind": "generate", "warmup": true, "prompt": "Describe your favourite food.", "generated_tokens": 40, "elapsed_s": 5.767, "tokens_per_s": 6.94}
+{"eval": "perf", "kind": "generate", "warmup": false, "prompt": "Describe your favourite food.", "generated_tokens": 40, "elapsed_s": 4.811, "tokens_per_s": 8.31}
+{"eval": "perf", "kind": "generate", "warmup": false, "prompt": "Explain what a bicycle is.", "generated_tokens": 40, "elapsed_s": 6.86, "tokens_per_s": 5.83}
+{"eval": "perf", "kind": "generate", "warmup": false, "prompt": "Describe a city at night.", "generated_tokens": 40, "elapsed_s": 5.111, "tokens_per_s": 7.83}
