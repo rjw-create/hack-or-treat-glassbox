@@ -116,7 +116,8 @@ def build_app(gb, fake: bool = False, tours_dir: Path = TOURS_DIR) -> gr.Blocks:
             raise gr.Error("Type both prompts first.")
         return diff_rows(gb.diff(prompt_a, prompt_b, top_n=DIFF_TOP_N))
 
-    with gr.Blocks(title="Glassbox") as app:
+    # Gradio otherwise sends usage telemetry and a version check to api.gradio.app; Glassbox stays offline.
+    with gr.Blocks(title="Glassbox", analytics_enabled=False) as app:
         gr.Markdown("# Glassbox\nSee which sparse-autoencoder features fire as Gemma 3 writes, and steer them.")
         if fake:
             gr.Markdown("**Fake mode:** sample data, not real model output.")

@@ -11,7 +11,8 @@ It runs on your own machine. It uses Google's open-weight Gemma 3 models and the
 - Python 3.11
 - Git
 - A free Hugging Face account (needed to download Gemma 3; see below)
-- No GPU needed. The real model runs on the CPU, or on an Intel GPU if you have PyTorch's Intel (XPU) build; NVIDIA GPUs are not used. Replies take a few seconds on a laptop CPU.
+- No GPU needed. The real model runs on the CPU, or on an Intel GPU if you have PyTorch's Intel (XPU) build; NVIDIA GPUs are not used. On our laptop CPU it generated about 8 tokens per second (median 7.83, [`results/summary.md`](results/summary.md)).
+- About 2.2 GB of free disk space for the first real-model run, which downloads the model (2,034 MB) and the SAE (151 MB).
 - To try the interface without downloading the model, use `--fake` (see [Try it without the model](#try-it-without-the-model)).
 
 ## Install from a fresh clone
@@ -99,7 +100,7 @@ glassbox --fake
 - **Compare runs:** see the steered reply next to the unsteered one.
 - **Diff:** enter two prompts and see which features differ most between them.
 
-<!-- TODO: add screenshots once the UI exists. -->
+<!-- TODO: add screenshots of the Explore and Diff tabs. -->
 
 ## How it works
 
@@ -111,15 +112,17 @@ glassbox --fake
 
 **Diff mode.** For two prompts, Glassbox averages each feature's activation over each prompt's tokens and ranks features by how much they change. It's a quick way to find candidate features, but a high diff rank doesn't guarantee the feature steers. In our tests, the top feature for "Reply in English" vs "Reply in French" (11207) had no visible effect when steered. Always confirm with steering.
 
-**What we observed.** These come from greedy decoding on one prompt per feature, 30-60 tokens. They are observations, not proof. The measured table is in [`docs/2026-10-31-interface.md`](docs/2026-10-31-interface.md).
-- Feature 6855 at 400 switches replies into a Romance language (Italian-like, not French). By 1,200 the text is garbled.
-- Feature 544 adds "you're absolutely right" style agreement. At 800 the model agreed that water boils at 50 degrees Celsius, a claim it corrects when unsteered. It stayed fluent up to 1,600.
-- Feature 1235 pulls in crime and illegality: at 800, "How do I bake bread at home?" turns into a warning about crime.
+**What we measured.** Each feature was steered on 5 prompts per strength (greedy decoding, 30-40 tokens), and the replies were checked with simple word lists. Full tables, example replies, the scripts that produced them, and the checks' limits are in [`results/summary.md`](results/summary.md).
+- **Feature 6855 (Romance language):** 0 of 5 replies at strength 0; 5 of 5 at 400, mostly Italian-like, not French. By 1,200 the text loops and becomes garbled.
+- **Feature 544 (agreement, "you're absolutely right"):** 1 of 5 unsteered replies already used the phrase. That rose to 3 of 5 at 800 and 4 of 5 at 1,200. The check counts the phrase, not whether the model really endorses a false claim. In one run at 800, the model agreed that water boils at 50 degrees Celsius, a claim it corrects when unsteered.
+- **Feature 1235 (crime):** 2 of 5 replies at 800 and 4 of 5 at 1,200 brought in crime words, on harmless prompts such as baking bread.
+- **Feature 11207 (a negative result):** this was the top feature in the diff between "Reply in English." and "Reply in French.", but steering it made 0 of 10 replies French at any strength up to 800. By 2,100 the output collapsed.
+- **Repeat runs:** two runs gave identical text and features in 6 of 6 cases.
 - We did not find a refusal feature this way.
 
 **Limits.** One model, one layer, one SAE. The labels in `labels/curated.json` are written by hand from observed behaviour. Steering effects vary by prompt.
 
-<!-- TODO: add sparsity, reconstruction quality and speed once Core's scripts/measure_sae.py and Proof's results/ are on main, citing those files. -->
+<!-- TODO: add sparsity and reconstruction quality once Core's scripts/measure_sae.py output is on main, citing that file. -->
 
 ## How this differs from Neuronpedia
 
@@ -127,7 +130,7 @@ glassbox --fake
 
 Glassbox is smaller and aims at a different job:
 
-- **Local first.** It is a Python package plus a simple interface that you run on your own machine with one install command. Your prompts stay on your computer.
+- **Local first.** It is a Python package plus a simple interface that you run on your own machine with one install command. Your prompts stay on your computer, and Glassbox turns off Gradio's usage telemetry. After the first download, the Hugging Face libraries still check online for model updates when loading; set the standard `HF_HUB_OFFLINE=1` environment variable to stop that (we have not tested a fully offline run).
 - **Built around one prompt.** The view starts from a reply you generate: token by token, which features fired, and how the reply changes when you steer them. Neuronpedia is organised mostly around individual features and their dashboards.
 - **Small enough to read and change.** You can import it into your own scripts and experiments.
 
@@ -138,7 +141,6 @@ What Glassbox does not do (yet):
 - It covers fewer models and SAEs than Neuronpedia.
 - Its labels are less complete than Neuronpedia's explanations.
 
-<!-- TODO: check these claims against what actually ships, and link the evals in evals/ / results/. -->
 
 ## Credits
 
