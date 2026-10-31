@@ -14,8 +14,9 @@ from glassbox.sae import DEFAULT_LAYER, load_sae
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LABELS_DIR = REPO_ROOT / "labels"
 TOP_K = 5
-# Provisional, in feature-activation units: 400 stayed fluent, ~2100 collapsed the model.
-STEERING_LIMIT = 800.0
+# In feature-activation units. Layer 13's residual norm has median ~6740, so 1200 is ~18% of it.
+# Across 7 swept features, useful effects appeared at 400-1200 and most degenerated beyond that.
+STEERING_LIMIT = 1200.0
 
 
 @dataclass

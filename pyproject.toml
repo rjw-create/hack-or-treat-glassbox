@@ -15,6 +15,9 @@ dependencies = [
     "sae-lens==6.54.12",
 ]
 
+[project.scripts]
+glassbox = "glassbox.__main__:main"
+
 [project.optional-dependencies]
 dev = ["pytest==9.2.0"]
 ui = ["gradio==6.31.0"]
