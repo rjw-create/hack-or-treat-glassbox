@@ -123,7 +123,11 @@ glassbox --fake
 
 **Limits.** One model, one layer, one SAE. The labels in `labels/curated.json` are written by hand from observed behaviour. Steering effects vary by prompt.
 
-<!-- TODO: add sparsity and reconstruction quality once Core's scripts/measure_sae.py output is on main, citing that file. -->
+**How sparse and how accurate the SAE is.** We ran 10 short prompts through the model on the CPU in float32 (156 prompt tokens, chat template included, the `<bos>` token skipped) and passed the layer-13 activations through the SAE.
+- **Sparsity:** on average 46.9 of the 16,384 features were active per token (mean L0; active means activation above 0).
+- **Reconstruction:** the SAE's rebuilt activations explained 98.75% of the variance of the originals (fraction of variance explained, 0.9875).
+
+These come from one small set of prompts, not a benchmark. The prompts, settings and library versions are in [`scripts/measure_sae_output.json`](scripts/measure_sae_output.json); rerun with `python scripts/measure_sae.py` (about 2 minutes on a laptop CPU).
 
 ## How this differs from Neuronpedia
 
