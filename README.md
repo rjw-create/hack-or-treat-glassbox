@@ -101,7 +101,13 @@ glassbox --fake
 - **Compare runs:** see the steered reply next to the unsteered one.
 - **Diff:** enter two prompts and see which features differ most between them.
 
-<!-- TODO: add screenshots of the Explore and Diff tabs. -->
+![Explore tab: the Romance language tour, with the steered reply next to the unsteered one, coloured reply tokens, and the top 5 features of the selected token](docs/images/2026-11-02-explore-tab.png)
+
+*Explore tab, real model (not `--fake`): the "Romance language" tour steers feature 6855 at strength 400. Clicking a token lists its 5 strongest features.*
+
+![Diff tab: "Reply in English" vs "Reply in French", with the features whose mean activation changes most](docs/images/2026-11-02-diff-tab.png)
+
+*Diff tab, real model: features ranked by the change in mean activation between the two prompts.*
 
 ## How it works
 
