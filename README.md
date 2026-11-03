@@ -162,4 +162,7 @@ What Glassbox does not do (yet):
 
 ## License
 
-Glassbox's own code is licensed under the [Apache License 2.0](LICENSE). That licence does not cover the Gemma 3 weights or the Gemma Scope 2 SAEs; they keep their own terms, listed above.
+Glassbox's own code is licensed under the [Apache License 2.0](LICENSE). That licence does not cover the Gemma 3 weights or the Gemma Scope 2 SAEs; they keep their own terms:
+
+- **Gemma Scope 2** SAEs: by Google DeepMind, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) ([source](https://huggingface.co/google/gemma-scope-2)). Glassbox downloads them at run time and does not redistribute them.
+- **Gemma 3** weights: by Google, under the [Gemma Terms of Use](https://ai.google.dev/gemma/terms).
