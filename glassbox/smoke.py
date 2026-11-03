@@ -5,10 +5,12 @@ Run with: python -m glassbox.smoke   (downloads ~2 GB on first run)
 """
 import sys
 
-from glassbox.api import Glassbox
+from glassbox.api import REPO_ROOT, Glassbox, load_tour
 
 # Strength in feature-activation units. The spike showed ~2100 collapses the model into blank lines.
 SMOKE_STRENGTH = 400.0
+TOURS_DIR = REPO_ROOT / "tours"
+TOUR_TOKENS = 20
 
 
 def main() -> int:
@@ -31,10 +33,23 @@ def main() -> int:
     if len(diffs) != 5 or abs(diffs[0].delta) < abs(diffs[-1].delta):
         failures.append(f"diff not ranked: {[round(d.delta, 1) for d in diffs]}")
 
+    # Every shipped tour must load and visibly change its reply. 20 tokens keeps this cheap; greedy
+    # decoding makes it deterministic, so a failure means the tour's feature or strength stopped working.
+    tour_lines = []
+    for path in sorted(TOURS_DIR.glob("*.json")):
+        tour = load_tour(path)
+        plain = gb.generate(tour["prompt"], max_new_tokens=TOUR_TOKENS)
+        steered_tour = gb.generate(tour["prompt"], max_new_tokens=TOUR_TOKENS, steering=tour["steering"])
+        if steered_tour.text == plain.text:
+            failures.append(f"tour {path.name}: steering did not change the reply")
+        tour_lines.append(f"tour {path.name} {tour['steering']}: {steered_tour.text!r}")
+
     print(f"tokens: {len(base.tokens)} ({sum(t.is_generated for t in base.tokens)} generated)")
     print(f"unsteered: {base.text!r}")
     print(f"steered (+feature {top_feature} x {SMOKE_STRENGTH}): {steered.text!r}")
     print("diff English -> French, top 5:", [(d.feature_id, round(d.delta, 1)) for d in diffs])
+    for line in tour_lines:
+        print(line)
     for failure in failures:
         print("FAIL:", failure)
     if failures:

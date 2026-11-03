@@ -1,0 +1,39 @@
+{
+ "model": "google/gemma-3-1b-it",
+ "sae": "gemma-scope-2-1b-it-res/layer_13_width_16k_l0_medium",
+ "num_hidden_layers": 26,
+ "hidden_size": 1152,
+ "sae_class": "JumpReLUSAE",
+ "sae_features": 16384,
+ "layer": 13,
+ "device": "cpu",
+ "dtype": "torch.float32",
+ "versions": {
+  "torch": "2.15.0",
+  "transformers": "5.22.1",
+  "sae-lens": "6.54.12"
+ },
+ "prompts": [
+  "Write one sentence about autumn in Paris.",
+  "Explain what a bicycle is.",
+  "What is 12 times 7?",
+  "Give me one tip for studying.",
+  "Describe a city at night.",
+  "Tell me about your morning.",
+  "Parle-moi de ta matinée.",
+  "Write a short greeting for a friend.",
+  "How do I bake bread at home?",
+  "What should I pack for a beach trip?"
+ ],
+ "prompt_format": "chat template with generation prompt; forward pass only, no generated tokens",
+ "tokens_measured": 156,
+ "mean_active_features_per_token": 46.9,
+ "variance_explained": 0.9875,
+ "resid_norm": {
+  "median": 6688.1,
+  "p10": 5369.4,
+  "p90": 8346.8
+ },
+ "steering_limit": 1200.0,
+ "steering_limit_as_fraction_of_median_norm": 0.179
+}

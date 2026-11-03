@@ -101,7 +101,13 @@ glassbox --fake
 - **Compare runs:** see the steered reply next to the unsteered one.
 - **Diff:** enter two prompts and see which features differ most between them.
 
-<!-- TODO: add screenshots of the Explore and Diff tabs. -->
+![Explore tab: the Romance language tour, with the steered reply next to the unsteered one, coloured reply tokens, and the top 5 features of the selected token](docs/images/2026-11-02-explore-tab.png)
+
+*Explore tab, real model (not `--fake`): the "Romance language" tour steers feature 6855 at strength 400. Clicking a token lists its 5 strongest features.*
+
+![Diff tab: "Reply in English" vs "Reply in French", with the features whose mean activation changes most](docs/images/2026-11-02-diff-tab.png)
+
+*Diff tab, real model: features ranked by the change in mean activation between the two prompts.*
 
 ## How it works
 
@@ -123,7 +129,11 @@ glassbox --fake
 
 **Limits.** One model, one layer, one SAE. The labels in `labels/curated.json` are written by hand from observed behaviour. Steering effects vary by prompt.
 
-<!-- TODO: add sparsity and reconstruction quality once Core's scripts/measure_sae.py output is on main, citing that file. -->
+**How sparse and how accurate the SAE is.** We ran 10 short prompts through the model on the CPU in float32 (156 prompt tokens, chat template included, the `<bos>` token skipped) and passed the layer-13 activations through the SAE.
+- **Sparsity:** on average 46.9 of the 16,384 features were active per token (mean L0; active means activation above 0).
+- **Reconstruction:** the SAE's rebuilt activations explained 98.75% of the variance of the originals (fraction of variance explained, 0.9875).
+
+These come from one small set of prompts, not a benchmark. The prompts, settings and library versions are in [`scripts/measure_sae_output.json`](scripts/measure_sae_output.json); rerun with `python scripts/measure_sae.py` (about 2 minutes on a laptop CPU).
 
 ## How this differs from Neuronpedia
 
