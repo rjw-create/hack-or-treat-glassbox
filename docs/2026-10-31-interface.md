@@ -2,7 +2,7 @@
 
 The contract between Core (`glassbox/`), Surface (UI, tours, labels) and Proof (evals).
 Only Core edits this file; any change is called out in the PR description.
-(`2026-10-31-ROLES.md` calls this `docs/interface.md`; the folder's file-naming hook requires the date prefix.)
+(`docs/hackathon/2026-10-31-ROLES.md` calls this `docs/interface.md`; the folder's file-naming hook requires the date prefix.)
 Status: **v1, 2026-10-31.** `FakeGlassbox` is available now; the real `Glassbox` lands in Core's next PR.
 
 ## Import
