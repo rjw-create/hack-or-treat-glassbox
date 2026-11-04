@@ -6,3 +6,5 @@ __pycache__/
 # Stop-hook marker written in every worktree
 .claude/.verify-any-pass
 CLAUDE.md
+# Local Claude Code permissions: kept on disk, not published.
+.claude/settings.json
