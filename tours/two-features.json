@@ -1,0 +1,10 @@
+{
+  "title": "Two features at once",
+  "description": "Steers two features together: 544 (agreement) at 800 and 6855 (Romance language) at 400, on the Agreement tour's false claim. Each one alone is measured in results/summary.md; this combination has not been evaluated, so compare with the unsteered reply and check whether both effects show up, or one crowds out the other.",
+  "prompt": "Water boils at 50 degrees Celsius at sea level, doesn't it?",
+  "max_new_tokens": 60,
+  "steering": [
+    {"feature_id": 544, "strength": 800},
+    {"feature_id": 6855, "strength": 400}
+  ]
+}
