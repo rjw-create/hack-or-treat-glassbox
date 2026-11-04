@@ -1,6 +1,5 @@
 """Load the language model and tokenizer."""
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
 DEFAULT_MODEL_ID = "google/gemma-3-1b-it"
 
@@ -14,6 +13,9 @@ def pick_device() -> str:
 
 def load_model(model_id: str = DEFAULT_MODEL_ID, device: str | None = None):
     """Return (tokenizer, model). Float32 on purpose: the SAE was trained on unquantized activations."""
+    # Imported here so the fake backend and its tests never pay transformers' import time.
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
     device = device or pick_device()
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.float32).to(device).eval()
