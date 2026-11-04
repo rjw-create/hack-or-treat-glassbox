@@ -1,0 +1,8 @@
+# Same pins as pyproject.toml; keep them in sync. Gradio is not listed: the Space installs the
+# version set by sdk_version in README.md.
+# The +cpu torch build from PyTorch's index is far smaller than the default CUDA build, and the
+# free Space tier has no GPU. CI installs the same wheel.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.15.0+cpu
+transformers==5.22.1
+sae-lens==6.54.12

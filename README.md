@@ -92,6 +92,18 @@ glassbox --fake
 
 `--fake` uses built-in sample data. It needs no download, login or GPU. Use it to explore the interface; the features and labels it shows are not real model output.
 
+## Hugging Face Space
+
+The `space/` folder holds the files for hosting Glassbox on a free Hugging Face Space (CPU basic). The Space starts in fake mode, because the real model is too slow on a shared free CPU. To load Gemma 3 instead, set the Space variable `GLASSBOX_REAL_MODEL` to `1` and add your read token as the Space secret `HF_TOKEN`.
+
+To build the folder you upload to the Space:
+
+```bash
+python space/prepare_space.py ../glassbox-space
+```
+
+It copies the Space card (`space/README.md`), `space/app.py`, `space/requirements.txt` and the code the app needs into that folder. Choose a folder outside this repository.
+
 ## What you can do
 
 - **Guided tours:** pick a tour to fill in a prompt and a steering setting that we have seen work.
